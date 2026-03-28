@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SalesPro — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ══════════════ TOKENS ══════════════ */
+:root {
+  --bg:      #07080d;
+  --s1:      #0f1018;
+  --s2:      #171a24;
+  --s3:      #1f2232;
+  --s4:      #272b3e;
+  --pur:     #9400d3;
+  --pur-l:   #b000f5;
+  --pur-d:   rgba(148,0,211,.14);
+  --pur-b:   rgba(148,0,211,.28);
+  --gold:    #f5c400;
+  --gold-d:  rgba(245,196,0,.1);
+  --green:   #22c55e;
+  --green-d: rgba(34,197,94,.1);
+  --green-b: rgba(34,197,94,.25);
+  --red:     #ef4444;
+  --red-d:   rgba(239,68,68,.1);
+  --red-b:   rgba(239,68,68,.25);
+  --amber:   #f59e0b;
+  --amber-d: rgba(245,158,11,.1);
+  --amber-b: rgba(245,158,11,.25);
+  --tx:      #e8e9ee;
+  --tx2:     #9da3bc;
+  --tx3:     #5c6278;
+  --bdr:     rgba(255,255,255,.07);
+  --r:       10px; --rl:14px; --rs:7px;
+  --fu:      'Inter', system-ui, sans-serif;
+  --fm:      'IBM Plex Mono', monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;width:100%;max-width:100%;overflow-x:hidden;}
+body{background:var(--bg);color:var(--tx);font-family:var(--fu);font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;}
+svg{display:block;flex-shrink:0;}
+button{font-family:var(--fu);cursor:pointer;border:none;border-radius:var(--rs);transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+
+/* ══ AUTH OVERLAY ══ */
+#authOverlay{
+  position:fixed;inset:0;z-index:300;
+  width:100%;height:100%;height:100dvh;
+  background:#08000f;
+  display:flex;align-items:center;justify-content:center;padding:clamp(12px,4vw,20px);
+  overflow-y:auto;
+}
+#authOverlay::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 70% 60% at 0% 0%,  rgba(148,0,211,.22) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 55% at 100% 100%,rgba(110,0,180,.18) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 45% at 50% 0%,  rgba(255,210,0,.07) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 40% at 100% 0%,rgba(180,0,255,.1) 0%,transparent 50%),
+    radial-gradient(ellipse 35% 30% at 0% 100%,rgba(120,0,200,.1) 0%,transparent 50%);
+  pointer-events:none;
+}
+#authOverlay.gone{display:none;}
+
+.auth-card{
+  position:relative;z-index:1;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(180,80,255,.2);
+  border-radius:22px;width:100%;max-width:400px;overflow:hidden;
+  box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 60px rgba(148,0,211,.15),inset 0 1px 0 rgba(255,255,255,.1);
+  backdrop-filter:blur(20px);
+  animation:fadeUp .32s cubic-bezier(.34,1.2,.64,1);
+}
+@keyframes fadeUp{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.ac-head{
+  background:linear-gradient(160deg,rgba(148,0,211,.2) 0%,rgba(80,0,140,.15) 100%);
+  padding:32px 28px 24px;border-bottom:1px solid rgba(180,80,255,.15);text-align:center;position:relative;
+}
+.ac-head::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(200,100,255,.3),transparent);}
+.ac-logo{display:inline-flex;align-items:center;gap:10px;font-size:20px;font-weight:700;letter-spacing:-0.4px;margin-bottom:6px;color:#fff;}
+.ac-logo-mark{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.ac-logo span{background:linear-gradient(90deg,#f5c400,#ffd93d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.ac-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(148,0,211,.25);border:1px solid rgba(180,80,255,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;color:#d68fff;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;}
+.ac-sub{font-size:12px;color:rgba(255,255,255,.35);margin-top:2px;}
+.ac-body{padding:26px 28px 30px;}
+.ac-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.ac-field label{font-size:11px;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:0.5px;text-transform:uppercase;}
+.ac-field input{background:rgba(0,0,0,.3);border:1px solid rgba(180,80,255,.15);border-radius:var(--rs);color:#fff;font-family:var(--fu);font-size:14px;padding:12px 13px;outline:none;transition:all .15s;width:100%;}
+.ac-field input:focus{border-color:rgba(180,80,255,.6);background:rgba(148,0,211,.08);box-shadow:0 0 0 3px rgba(148,0,211,.12);}
+.ac-field input::placeholder{color:rgba(255,255,255,.2);}
+.ac-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:var(--rs);padding:10px 13px;font-size:12px;color:#fca5a5;display:none;align-items:center;gap:7px;margin-bottom:14px;}
+.ac-err.show{display:flex;}
+.ac-btn{width:100%;padding:13px;background:linear-gradient(135deg,#9400d3 0%,#7b00b0 100%);color:#fff;font-weight:700;font-size:14px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 4px 20px rgba(148,0,211,.4);}
+.ac-btn:hover{background:linear-gradient(135deg,#b000f5 0%,#9400d3 100%);transform:translateY(-1px);box-shadow:0 6px 24px rgba(148,0,211,.55);}
+
+/* ══ APP ══ */
+#appWrap{display:none;min-height:100vh;min-height:100dvh;flex-direction:column;width:100%;}
+#appWrap.visible{display:flex;}
+
+/* ══ TOPBAR ══ */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:56px;
+  background:var(--s1);border-bottom:1px solid var(--bdr);
+  position:sticky;top:0;z-index:50;
+}
+.tbar-left{display:flex;align-items:center;gap:10px;}
+.tbar-logo{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:700;letter-spacing:-0.3px;}
+.tbar-logo span{background:linear-gradient(90deg,#f5c400,#ffd93d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.tbar-logo-mark{width:30px;height:30px;border-radius:7px;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.tbar-badge{background:var(--pur-d);color:#d68fff;font-size:10px;font-weight:600;letter-spacing:0.5px;padding:3px 10px;border-radius:20px;border:1px solid var(--pur-b);text-transform:uppercase;display:flex;align-items:center;gap:5px;}
+.tbar-right{display:flex;align-items:center;gap:10px;}
+.tbar-admin{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx2);}
+.tbar-avatar{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#9400d3,#7b00b0);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;box-shadow:0 2px 8px rgba(148,0,211,.4);}
+.tbar-signout{background:var(--s3);color:var(--tx3);font-size:11px;font-weight:500;padding:5px 11px;border-radius:var(--rs);}
+.tbar-signout:hover{color:var(--red);background:var(--red-d);}
+
+/* ══ MAIN ══ */
+.main{padding:24px 28px;max-width:1100px;margin:0 auto;width:100%;flex:1;}
+
+/* ══ STATS ══ */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+@media(max-width:700px){.stats-row{grid-template-columns:1fr 1fr;}}
+.stat-box{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--rl);padding:16px 18px;}
+.stat-box .sb-lbl{font-size:10px;font-weight:600;color:var(--tx3);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.stat-box .sb-val{font-size:26px;font-weight:700;letter-spacing:-0.5px;}
+.sb-val.pur{color:#c084fc;}
+.sb-val.amber{color:var(--amber);}
+.sb-val.green{color:var(--green);}
+.sb-val.red{color:var(--red);}
+
+/* ══ SECTION ══ */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.filter-tabs{display:flex;background:var(--s3);border-radius:8px;padding:3px;gap:2px;}
+.ftab{padding:5px 14px;font-size:11px;font-weight:600;background:transparent;color:var(--tx3);border-radius:6px;letter-spacing:0.2px;font-family:var(--fu);}
+.ftab.active{background:var(--s1);color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.3);}
+.ftab:hover:not(.active){color:var(--tx2);}
+
+/* ══ USER TABLE ══ */
+.user-table-wrap{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--rl);overflow:hidden;margin-bottom:24px;}
+.user-table{width:100%;border-collapse:collapse;}
+.user-table thead tr{background:var(--s2);}
+.user-table th{text-align:left;font-size:10px;font-weight:600;color:var(--tx3);letter-spacing:0.5px;text-transform:uppercase;padding:10px 16px;border-bottom:1px solid var(--bdr);}
+.user-table td{padding:13px 16px;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle;}
+.user-table tr:last-child td{border-bottom:none;}
+.user-table tr:hover td{background:rgba(255,255,255,.02);}
+
+.u-name{font-weight:600;color:var(--tx);}
+.u-email{color:var(--tx3);font-family:var(--fm);font-size:11px;margin-top:2px;}
+.u-date{font-size:11px;font-family:var(--fm);color:var(--tx3);}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:0.3px;text-transform:uppercase;}
+.badge-pending{background:var(--amber-d);color:var(--amber);border:1px solid var(--amber-b);}
+.badge-approved{background:var(--green-d);color:var(--green);border:1px solid var(--green-b);}
+.badge-declined{background:var(--red-d);color:var(--red);border:1px solid var(--red-b);}
+
+.action-row{display:flex;gap:6px;}
+.btn-approve{background:var(--green-d);color:var(--green);border:1px solid var(--green-b);padding:5px 12px;font-size:11px;font-weight:600;}
+.btn-approve:hover{background:rgba(34,197,94,.2);}
+.btn-decline{background:var(--red-d);color:var(--red);border:1px solid var(--red-b);padding:5px 12px;font-size:11px;font-weight:600;}
+.btn-decline:hover{background:rgba(239,68,68,.2);}
+.btn-revoke{background:var(--amber-d);color:var(--amber);border:1px solid var(--amber-b);padding:5px 12px;font-size:11px;font-weight:600;}
+.btn-revoke:hover{background:rgba(245,158,11,.2);}
+.btn-delete{background:var(--red-d);color:var(--red);border:1px solid rgba(239,68,68,.15);padding:5px 9px;font-size:11px;}
+.btn-delete:hover{background:rgba(239,68,68,.2);}
+
+.empty-row td{text-align:center;padding:36px;color:var(--tx3);font-size:12px;}
+
+/* ══ SEARCH ══ */
+.search-wrap{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.search-input{background:var(--s2);border:1px solid var(--bdr);border-radius:var(--rs);color:var(--tx);font-family:var(--fu);font-size:12.5px;padding:8px 12px;outline:none;transition:border-color .15s;width:260px;}
+.search-input:focus{border-color:var(--pur-b);}
+.search-input::placeholder{color:var(--tx3);}
+
+/* ══ TOAST ══ */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid var(--pur-b);color:var(--tx);padding:11px 18px;border-radius:var(--r);font-size:12.5px;font-weight:500;z-index:300;transform:translateY(70px);opacity:0;transition:all .25s;pointer-events:none;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+#toast.show{transform:translateY(0);opacity:1;}
+
+/* ══ CONFIRM MODAL ══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--s2);border:1px solid var(--bdr);border-radius:var(--rl);padding:28px;max-width:380px;width:90%;animation:fadeUp .22s ease;}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:8px;}
+.modal-body{font-size:12.5px;color:var(--tx2);line-height:1.7;margin-bottom:20px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.btn-ghost{background:transparent;color:var(--tx2);border:1px solid var(--bdr);padding:8px 16px;font-size:12.5px;}
+.btn-ghost:hover{color:var(--tx);border-color:rgba(255,255,255,.15);}
+.btn-danger-solid{background:var(--red);color:#fff;padding:8px 16px;font-size:12.5px;font-weight:600;}
+.btn-danger-solid:hover{background:#dc2626;}
+
+/* ══ ACTIVITY LOG ══ */
+.activity-panel{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--rl);overflow:hidden;}
+.activity-hdr{padding:14px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;}
+.activity-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;}
+.act-clear{font-size:11px;background:none;border:none;color:var(--tx3);cursor:pointer;padding:3px 6px;border-radius:4px;font-family:var(--fu);}
+.act-clear:hover{color:var(--red);background:var(--red-d);}
+.activity-list{max-height:220px;overflow-y:auto;}
+.act-entry{display:flex;align-items:baseline;gap:12px;padding:9px 18px;border-bottom:1px solid rgba(255,255,255,.03);}
+.act-entry:last-child{border-bottom:none;}
+.act-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.act-dot.approve{background:var(--green);}
+.act-dot.decline{background:var(--red);}
+.act-dot.revoke{background:var(--amber);}
+.act-dot.delete{background:var(--tx3);}
+.act-text{font-size:11.5px;color:var(--tx2);flex:1;}
+.act-time{font-size:10px;font-family:var(--fm);color:var(--tx3);white-space:nowrap;}
+.act-empty{padding:20px 18px;font-size:12px;color:var(--tx3);text-align:center;}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--s4);border-radius:4px;}
+
+/* ══ RESPONSIVE / FLUID FULL-SCREEN ══ */
+:root {
+  --pad-x: clamp(12px, 4vw, 28px);
+  --pad-y: clamp(14px, 3vw, 24px);
+}
+
+/* Topbar and main always stretch full width */
+.topbar { padding: 0 var(--pad-x); width: 100%; }
+.main   { padding: var(--pad-y) var(--pad-x); width: 100%; max-width: 1100px; margin: 0 auto; flex: 1; box-sizing: border-box; }
+
+/* ── Small phones (≤480px) ── */
+@media(max-width:480px){
+  .topbar { height: 52px; }
+  .tbar-logo { font-size: 13px; gap: 6px; }
+  .tbar-logo-mark { width: 26px; height: 26px; }
+  .tbar-badge { display: none; }
+  .tbar-admin { font-size: 11px; gap: 5px; }
+  .tbar-signout { padding: 5px 8px; font-size: 10px; }
+
+  /* Stats 2-column grid */
+  .stats-row { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .stat-box { padding: 11px 12px; }
+  .stat-box .sb-val { font-size: 22px; }
+
+  /* Section header stacks */
+  .section-hdr { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .section-hdr > div:last-child { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+
+  /* Search + filters full width */
+  .search-input { width: 100%; }
+  .filter-tabs  { width: 100%; }
+  .ftab { flex: 1; text-align: center; padding: 6px 4px; }
+
+  /* Table — hide Registered & Sales Data on tiny screens */
+  .user-table th:nth-child(2), .user-table td:nth-child(2),
+  .user-table th:nth-child(4), .user-table td:nth-child(4) { display: none; }
+  .user-table th, .user-table td { padding: 10px 10px; }
+  .u-email { font-size: 10px; }
+  .action-row { flex-wrap: wrap; gap: 4px; }
+  .btn-approve, .btn-decline, .btn-revoke { padding: 4px 8px; font-size: 10px; }
+
+  /* Activity log */
+  .act-entry { flex-wrap: wrap; }
+  .act-time { width: 100%; margin-left: 18px; margin-top: 2px; }
+
+  /* Toast */
+  #toast { left: 12px; right: 12px; bottom: 12px; width: auto; }
+
+  /* Modal */
+  .modal { padding: 18px 14px; width: 96%; }
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-actions button { width: 100%; justify-content: center; }
+
+  /* Auth card */
+  .ac-head { padding: 24px 18px 18px; }
+  .ac-body { padding: 18px 18px 24px; }
+}
+
+/* ── Mid screens (481px–768px) ── */
+@media(min-width:481px) and (max-width:768px){
+  .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .section-hdr { flex-wrap: wrap; gap: 10px; }
+  .section-hdr > div:last-child { flex-wrap: wrap; }
+  .search-input { width: 100%; }
+  .filter-tabs { flex: 1; }
+  .ftab { flex: 1; text-align: center; }
+  .user-table th:nth-child(4), .user-table td:nth-child(4) { display: none; }
+}
+
+/* ── Large screens ── */
+@media(min-width:1024px){
+  .stats-row { grid-template-columns: repeat(4,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH ══ -->
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="ac-head">
+      <div class="ac-logo">
+        <div class="ac-logo-mark">
+          <img src="data:image/png;base64,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" style="width:36px;height:36px;object-fit:cover;" alt="logo"/>
+        </div>
+        Sales<span>Pro</span>
+      </div>
+      <div class="ac-badge">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Admin Panel
+      </div>
+      <div class="ac-sub">Sign in with your admin credentials</div>
+    </div>
+    <div class="ac-body">
+      <div class="ac-err" id="acErr">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="acErrMsg"></span>
+      </div>
+      <div class="ac-field">
+        <label>Admin Email</label>
+        <input type="email" id="acEmail" placeholder="admin@example.com" onkeydown="if(event.key==='Enter')doAdminLogin()" />
+      </div>
+      <div class="ac-field">
+        <label>Password</label>
+        <input type="password" id="acPass" placeholder="Admin password" onkeydown="if(event.key==='Enter')doAdminLogin()" />
+      </div>
+      <button class="ac-btn" onclick="doAdminLogin()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Enter Admin Panel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="appWrap">
+
+  <div class="topbar">
+    <div class="tbar-left">
+      <div class="tbar-logo">
+        <div class="tbar-logo-mark">
+          <img src="data:image/png;base64,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" style="width:30px;height:30px;object-fit:cover;border-radius:7px;" alt="logo"/>
+        </div>
+        Sales<span>Pro</span>
+      </div>
+      <span class="tbar-badge">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Admin
+      </span>
+    </div>
+    <div class="tbar-right">
+      <div class="tbar-admin">
+        <div class="tbar-avatar" id="tbAvatar">A</div>
+        <span id="tbAdminName">Administrator</span>
+      </div>
+      <button class="tbar-signout" onclick="doSignOut()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow"></div>
+
+    <!-- Pending notification banner -->
+    <div id="pendingBanner" style="display:none;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:9px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#fcd34d;" id="pendingBannerTitle">Users awaiting approval</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;">Review and approve or decline each request below</div>
+        </div>
+      </div>
+      <button onclick="approveAllPending()" style="background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);padding:7px 16px;font-size:12px;font-weight:600;border-radius:7px;font-family:var(--fu);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Approve All Pending
+      </button>
+    </div>
+
+    <!-- User Management -->
+    <div class="section-hdr">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        User Management
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search by name or email…" oninput="renderUsers()" />
+        <div class="filter-tabs" id="filterTabs">
+          <button class="ftab active" onclick="setFilter('all')">All</button>
+          <button class="ftab" onclick="setFilter('pending')">Pending</button>
+          <button class="ftab" onclick="setFilter('approved')">Approved</button>
+          <button class="ftab" onclick="setFilter('declined')">Declined</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="user-table-wrap">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Registered</th>
+            <th>Status</th>
+            <th>Sales Data</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="activity-panel">
+      <div class="activity-hdr">
+        <div class="activity-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Activity Log
+        </div>
+        <button class="act-clear" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="activity-list" id="activityList">
+        <div class="act-empty" id="actEmpty">No activity yet.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-title" id="confirmTitle">Confirm Action</div>
+    <div class="modal-body" id="confirmBody">Are you sure?</div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-danger-solid" id="confirmBtn" onclick="runConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp }                                     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyBIipLg3KhULgln_jMLeNDl5W6upKPD3T0",
+  authDomain:        "swift-ride-1a115.firebaseapp.com",
+  databaseURL:       "https://swift-ride-1a115-default-rtdb.firebaseio.com",
+  projectId:         "swift-ride-1a115",
+  storageBucket:     "swift-ride-1a115.firebasestorage.app",
+  messagingSenderId: "410499651957",
+  appId:             "1:410499651957:web:fc71c976844b512bcfdb3c"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ── State ──
+let currentAdmin  = null;
+let filterMode    = 'all';
+let activityLog   = [];
+let pendingAction = null;
+let allUsers      = [];   // live snapshot from Firebase
+
+// ── Helpers ──
+function emailToKey(e){ return e.replace(/\./g,','); }
+function hashPass(p){ let h=0; for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;} return 'H'+Math.abs(h).toString(36); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function now(){ return new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+function fmtDate(iso){ if(!iso) return '—'; return new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' '+new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+
+async function fbGetUser(email){ const s=await get(ref(db,`users/${emailToKey(email)}`)); return s.exists()?s.val():null; }
+async function fbSaveUser(user){ await set(ref(db,`users/${emailToKey(user.email)}`),user); }
+async function fbGetAdmin(email){ const s=await get(ref(db,`admins/${emailToKey(email)}`)); return s.exists()?s.val():null; }
+async function fbSaveAdmin(admin){ await set(ref(db,`admins/${emailToKey(admin.email)}`),admin); }
+
+// Session (per-tab, not shared)
+function getAdminSession(){ return sessionStorage.getItem('sp_admin_session')||null; }
+function setAdminSession(e){ sessionStorage.setItem('sp_admin_session',e); }
+function clearAdminSession(){ sessionStorage.removeItem('sp_admin_session'); }
+
+// ── Ensure default admin ──
+async function ensureDefaultAdmin(){
+  const existing = await fbGetAdmin('admin@salespro.com');
+  if(!existing){
+    await fbSaveAdmin({ name:'Administrator', email:'admin@salespro.com', password:hashPass('admin123') });
+  }
+}
+
+// ── Live users listener ──
+function subscribeUsers(){
+  onValue(ref(db,'users'), snap=>{
+    allUsers = snap.exists() ? Object.values(snap.val()) : [];
+    renderAll();
+  });
+}
+
+// ── Activity log (stored in Firebase too) ──
+function subscribeLog(){
+  onValue(ref(db,'admin_log'), snap=>{
+    activityLog = snap.exists() ? Object.values(snap.val()).sort((a,b)=>b.ts-a.ts) : [];
+    renderLog();
+  });
+}
+async function logActivity(type, msg){
+  const entry = { type, msg, time:now(), ts:Date.now() };
+  await set(ref(db,`admin_log/${entry.ts}`), entry);
+}
+
+// ── Auth ──
+async function doAdminLogin(){
+  const email = document.getElementById('acEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('acPass').value;
+  const err   = msg=>{ document.getElementById('acErrMsg').textContent=msg; document.getElementById('acErr').classList.add('show'); };
+  document.getElementById('acErr').classList.remove('show');
+  if(!email){ err('Please enter your email.'); return; }
+  if(!pass) { err('Please enter your password.'); return; }
+  err('Signing in…');
+  document.getElementById('acErr').style.cssText='background:rgba(148,0,211,.1);border-color:rgba(148,0,211,.3);color:#d68fff;display:flex';
+  const admin = await fbGetAdmin(email);
+  document.getElementById('acErr').style.cssText='';
+  document.getElementById('acErr').classList.remove('show');
+  if(!admin)                         { err('No admin account found with this email.'); return; }
+  if(admin.password!==hashPass(pass)){ err('Incorrect password.'); return; }
+  setAdminSession(email); currentAdmin=admin; enterAdmin();
+}
+window.doAdminLogin = doAdminLogin;
+
+function doSignOut(){
+  clearAdminSession(); currentAdmin=null;
+  document.getElementById('appWrap').style.display='none';
+  document.getElementById('authOverlay').classList.remove('gone');
+  document.getElementById('acEmail').value='';
+  document.getElementById('acPass').value='';
+  document.getElementById('acErr').classList.remove('show');
+}
+window.doSignOut = doSignOut;
+
+function enterAdmin(){
+  document.getElementById('authOverlay').classList.add('gone');
+  document.getElementById('appWrap').style.display='flex';
+  document.getElementById('appWrap').style.flexDirection='column';
+  const initials=currentAdmin.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('tbAvatar').textContent  =initials;
+  document.getElementById('tbAdminName').textContent=currentAdmin.name;
+  subscribeUsers();   // real-time user list
+  subscribeLog();     // real-time activity log
+  logActivity('info','Admin signed in: '+currentAdmin.name);
+}
+
+// ── Render ──
+function renderAll(){ renderStats(); renderUsers(); }
+
+function renderStats(){
+  const pending  = allUsers.filter(u=>u.status==='pending').length;
+  const approved = allUsers.filter(u=>u.status==='approved'||(u.status===undefined&&u.email)).length;
+  const declined = allUsers.filter(u=>u.status==='declined').length;
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat-box"><div class="sb-lbl"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Total Users</div><div class="sb-val pur">${allUsers.length}</div></div>
+    <div class="stat-box"><div class="sb-lbl"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending</div><div class="sb-val amber">${pending}</div></div>
+    <div class="stat-box"><div class="sb-lbl"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Approved</div><div class="sb-val green">${approved}</div></div>
+    <div class="stat-box"><div class="sb-lbl"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Declined</div><div class="sb-val red">${declined}</div></div>`;
+  const banner=document.getElementById('pendingBanner');
+  if(pending>0){ banner.style.display='flex'; document.getElementById('pendingBannerTitle').textContent=`${pending} user${pending!==1?'s':''} awaiting approval`; }
+  else banner.style.display='none';
+}
+
+function setFilter(f){
+  filterMode=f;
+  document.querySelectorAll('.ftab').forEach((t,i)=>t.classList.toggle('active',['all','pending','approved','declined'][i]===f));
+  renderUsers();
+}
+window.setFilter = setFilter;
+
+function renderUsers(){
+  const query=(document.getElementById('searchInput').value||'').toLowerCase();
+  let users=[...allUsers];
+  if(filterMode==='pending')  users=users.filter(u=>u.status==='pending');
+  else if(filterMode==='approved') users=users.filter(u=>u.status==='approved'||(u.status===undefined&&u.email));
+  else if(filterMode==='declined') users=users.filter(u=>u.status==='declined');
+  if(query) users=users.filter(u=>u.name.toLowerCase().includes(query)||u.email.toLowerCase().includes(query));
+  const tbody=document.getElementById('userTableBody');
+  if(!users.length){ tbody.innerHTML=`<tr class="empty-row"><td colspan="5">No users found${query?' matching "'+esc(query)+'"':''}</td></tr>`; return; }
+  tbody.innerHTML=users.map(u=>{
+    const status=u.status||'approved';
+    const badge=status==='pending'
+      ?`<span class="badge badge-pending"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending</span>`
+      :status==='approved'
+        ?`<span class="badge badge-approved"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Approved</span>`
+        :`<span class="badge badge-declined"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Declined</span>`;
+    // Sales data from Firebase categories node
+    const dataCell=status==='approved'
+      ?`<div style="font-size:11px;color:var(--tx3);font-family:var(--fm)">Loading…</div>`
+      :`<span style="font-size:11px;color:var(--tx3)">—</span>`;
+    let actions='';
+    if(status==='pending'){
+      actions=`<button class="btn-approve" onclick="quickApprove('${esc(u.email)}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Approve</button>
+               <button class="btn-decline" onclick="confirmAction('decline','${esc(u.email)}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Decline</button>`;
+    } else if(status==='approved'){
+      actions=`<button class="btn-revoke" onclick="confirmAction('revoke','${esc(u.email)}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Revoke</button>`;
+    } else if(status==='declined'){
+      actions=`<button class="btn-approve" onclick="quickApprove('${esc(u.email)}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Approve</button>`;
+    }
+    actions+=`<button class="btn-delete" onclick="confirmAction('delete','${esc(u.email)}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>`;
+    const rowId=`row_${emailToKey(u.email)}`;
+    if(status==='approved'){
+      get(ref(db,`categories/${emailToKey(u.email)}`)).then(snap=>{
+        const cats=snap.exists()?Object.values(snap.val()):[];
+        const total=cats.reduce((a,c)=>a+c.items.length,0);
+        const sold=cats.reduce((a,c)=>a+c.items.filter(i=>i.sold).length,0);
+        const rev=cats.reduce((a,c)=>a+c.items.filter(i=>i.sold).reduce((b,i)=>b+i.price,0),0);
+        const cell=document.querySelector(`#${rowId} .data-cell`);
+        if(cell) cell.innerHTML=`<span style="color:var(--tx3)">Cats:</span> <span style="color:var(--tx2)">${cats.length}</span> &nbsp;<span style="color:var(--tx3)">Items:</span> <span style="color:var(--tx2)">${total}</span><br><span style="color:var(--tx3)">Sold:</span> <span style="color:var(--green)">${sold}</span> &nbsp;<span style="color:var(--tx3)">Rev:</span> <span style="color:#f5c400">K${rev.toFixed(2)}</span>`;
+      });
+    }
+    return `<tr id="${rowId}">
+      <td><div class="u-name">${esc(u.name)}</div><div class="u-email">${esc(u.email)}</div></td>
+      <td><span class="u-date">${fmtDate(u.registeredAt)}</span></td>
+      <td>${badge}</td>
+      <td><div class="data-cell" style="font-size:11px;line-height:1.9;font-family:var(--fm)">${status==='approved'?'<span style="color:var(--tx3)">Loading…</span>':'<span style="color:var(--tx3)">—</span>'}</div></td>
+      <td><div class="action-row">${actions}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Actions ──
+const CONFIRM_COPY={
+  decline:{ title:'Decline User',  body:'This will deny access. The user will be notified when they try to sign in.', btn:'Decline', cls:'btn-decline' },
+  revoke: { title:'Revoke Access', body:"This will suspend the user's access. They won't be able to sign in.", btn:'Revoke Access', cls:'btn-revoke' },
+  delete: { title:'Delete User',   body:'This will permanently delete this account and all their data. Cannot be undone.', btn:'Delete User', cls:'btn-danger-solid' },
+};
+
+function confirmAction(action, email){
+  const user=allUsers.find(u=>u.email===email); if(!user) return;
+  const cfg=CONFIRM_COPY[action];
+  document.getElementById('confirmTitle').textContent=cfg.title;
+  document.getElementById('confirmBody').innerHTML=`<strong>${esc(user.name)}</strong> &lt;${esc(user.email)}&gt;<br><br>${cfg.body}`;
+  const btn=document.getElementById('confirmBtn');
+  btn.textContent=cfg.btn; btn.className=cfg.cls;
+  btn.style.cssText='padding:9px 18px;font-size:13px;font-weight:600;';
+  pendingAction={action,email};
+  document.getElementById('confirmModal').classList.add('open');
+}
+window.confirmAction = confirmAction;
+
+function closeConfirm(){ document.getElementById('confirmModal').classList.remove('open'); pendingAction=null; }
+window.closeConfirm = closeConfirm;
+
+function runConfirm(){ if(!pendingAction) return; const{action,email}=pendingAction; closeConfirm(); applyAction(action,email); }
+window.runConfirm = runConfirm;
+
+async function quickApprove(email){ await applyAction('approve',email); }
+window.quickApprove = quickApprove;
+
+async function approveAllPending(){
+  const pending=allUsers.filter(u=>u.status==='pending');
+  if(!pending.length){ toast('No pending users'); return; }
+  for(const u of pending){ await fbSaveUser({...u,status:'approved'}); }
+  toast(`✓ ${pending.length} user${pending.length!==1?'s':''} approved`);
+  logActivity('approve',`Bulk approved ${pending.length} pending user${pending.length!==1?'s':''}`);
+}
+window.approveAllPending = approveAllPending;
+
+async function applyAction(action, email){
+  const user=allUsers.find(u=>u.email===email); if(!user){ toast('User not found'); return; }
+  const userName=user.name;
+  if(action==='approve'){
+    await fbSaveUser({...user,status:'approved'});
+    toast(`✓ ${userName} approved — they can now sign in`);
+    logActivity('approve',`Approved: ${userName} (${email})`);
+  } else if(action==='decline'){
+    await fbSaveUser({...user,status:'declined'});
+    toast(`✕ ${userName} declined`);
+    logActivity('decline',`Declined: ${userName} (${email})`);
+  } else if(action==='revoke'){
+    await fbSaveUser({...user,status:'pending'});
+    toast(`Access revoked for ${userName}`);
+    logActivity('revoke',`Revoked: ${userName} (${email})`);
+  } else if(action==='delete'){
+    await remove(ref(db,`users/${emailToKey(email)}`));
+    await remove(ref(db,`categories/${emailToKey(email)}`));
+    toast(`${userName} deleted`);
+    logActivity('delete',`Deleted: ${userName} (${email})`);
+  }
+}
+
+// ── Log ──
+function renderLog(){
+  const list=document.getElementById('activityList');
+  if(!activityLog.length){ list.innerHTML='<div class="act-empty">No activity yet.</div>'; return; }
+  list.innerHTML=activityLog.slice(0,50).map(e=>`
+    <div class="act-entry">
+      <span class="act-dot ${e.type}"></span>
+      <span class="act-text">${esc(e.msg)}</span>
+      <span class="act-time">${e.time}</span>
+    </div>`).join('');
+}
+async function clearLog(){
+  await remove(ref(db,'admin_log'));
+  activityLog=[];
+  renderLog();
+}
+window.clearLog = clearLog;
+
+// ── Toast ──
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>${esc(msg)}`;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── Boot ──
+(async function boot(){
+  await ensureDefaultAdmin();
+  const ses=getAdminSession();
+  if(ses){
+    const admin=await fbGetAdmin(ses);
+    if(admin){ currentAdmin=admin; enterAdmin(); return; }
+    clearAdminSession();
+  }
+  setTimeout(()=>document.getElementById('acEmail').focus(),120);
+})();
+</script>
+</body>
+</html>
